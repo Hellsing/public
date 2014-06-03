@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.004
+local version = 0.005
 
 local scriptName = "MehAIO"
 
@@ -196,6 +196,9 @@ function loadMenu()
 
     -- Prediction
     menu:addSubMenu("Prediction", "prediction")
+        menu.prediction:addParam("predictionType", "Prediction Type",     SCRIPT_PARAM_LIST, 1, { "VPrediction", "Prodiction" })
+        menu.prediction:addParam("packetCast",     "Enable packet casts", SCRIPT_PARAM_ONOFF, false)
+        _G.srcLib.spellMenu =  menu.prediction
 
     -- Combo
     if champ.OnCombo then
@@ -219,7 +222,7 @@ function initializeSpells()
         -- Range
         local range = type(data.range) == "number" and data.range or data.range[1]
         -- Spell
-        local spell = Spell(id, range, nil, menu.prediction)
+        local spell = Spell(id, range)
         if data.skillshotType then
             spell:SetSkillshot(VP, data.skillshotType, data.width, data.delay, data.speed, data.collision)
         end
