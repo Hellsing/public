@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.003
+local version = 0.004
 
 local scriptName = "MehAIO"
 
@@ -194,6 +194,9 @@ function loadMenu()
     -- Apply menu as normal script config
     menu = menu:GetHandle()
 
+    -- Prediction
+    menu:addSubMenu("Prediction", "prediction")
+
     -- Combo
     if champ.OnCombo then
     menu:addSubMenu("Combo", "combo")
@@ -216,7 +219,7 @@ function initializeSpells()
         -- Range
         local range = type(data.range) == "number" and data.range or data.range[1]
         -- Spell
-        local spell = Spell(id, range)
+        local spell = Spell(id, range, nil, menu.prediction)
         if data.skillshotType then
             spell:SetSkillshot(VP, data.skillshotType, data.width, data.delay, data.speed, data.collision)
         end
@@ -332,10 +335,12 @@ end
 function Blitzcrank:OnTick()
 
     -- Killsteal
-    local target = getBestTarget(spells[_R].range, function(enemy) return enemy.health <= DLib:CalcSpellDamage(enemy, _R) end)
-    if target then
-        spells[_R]:Cast()
-        return
+    if menu.killsteal and spells[_R]:IsReady() then
+        local target = getBestTarget(spells[_R].range, function(enemy) return enemy.health <= DLib:CalcSpellDamage(enemy, _R) end)
+        if target then
+            spells[_R]:Cast()
+            return
+        end
     end
 
     -- Don't grab on low health
