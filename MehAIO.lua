@@ -200,13 +200,13 @@ function loadMenu()
 
     -- Combo
     if champ.OnCombo then
-    menu:addSubMenu("combo", "combo")
+    menu:addSubMenu("Combo", "combo")
         menu.combo:addParam("active", "Combo active", SCRIPT_PARAM_ONKEYDOWN, false, 32)
     end
 
     -- Harass
     if champ.OnHarass then
-    menu:addSubMenu("harass", "harass")
+    menu:addSubMenu("Harass", "harass")
         menu.harass:addParam("active", "Harass active", SCRIPT_PARAM_ONKEYDOWN, false, string.byte("C"))
     end
 
@@ -1290,7 +1290,7 @@ end
 
 function Xerath:ApplyMenu()
 
-    -- combo
+    -- Combo
     menu.combo:addParam("sep",    "",        SCRIPT_PARAM_INFO, "")
     menu.combo:addParam("useQ",   "Use Q",   SCRIPT_PARAM_ONOFF , true)
     menu.combo:addParam("useW",   "Use W",   SCRIPT_PARAM_ONOFF, true)
@@ -1299,7 +1299,7 @@ function Xerath:ApplyMenu()
     menu.combo:addParam("rangeE", "E range", SCRIPT_PARAM_SLICE, spells[_E].range, 50, spells[_E].range, 1)
     menu.combo:addParam("castE",  "Use E!",  SCRIPT_PARAM_ONKEYDOWN, false, string.byte("O"))
     
-    -- harass
+    -- Harass
     menu.harass:addParam("sep",  "",                         SCRIPT_PARAM_INFO, "")
     menu.harass:addParam("useQ", "Use Q",                    SCRIPT_PARAM_ONOFF , true)
     menu.harass:addParam("mana", "Don't harass if mana < %", SCRIPT_PARAM_SLICE, 10, 0, 100)
