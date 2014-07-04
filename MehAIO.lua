@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.007
+local version = 0.008
 
 local scriptName = "MehAIO"
 
@@ -90,6 +90,8 @@ local AAcircle = nil
 
 local champLoaded = true
 local skip        = false
+
+local skinNumber = nil
 
 local __colors = {
     { current = 255, step = 1, min = 0, max = 255, mode = -1 },
@@ -180,12 +182,31 @@ function OnDraw()
     AAcircle.color[3] = __colors[2].current
     AAcircle.color[4] = __colors[3].current
 
+    -- Skin changer
+    if menu.skin then
+        for i = 1, skinNumber do
+            if menu.skin["skin"..i] then
+                menu.skin["skin"..i] = false
+                GenModelPacket(player.charName, i - 1)
+            end
+        end
+    end
+
 end
 
 --[[ Other Functions ]]--
 
 function loadMenu()
     menu = MenuWrapper("[" .. scriptName .. "] " .. player.charName, "unique" .. player.charName:gsub("%s+", ""))
+
+    -- Skin changer
+    if champ.GetSkins then
+        menu:GetHandle():addSubMenu("Skin Changer", "skin")
+        for i, name in ipairs(champ:GetSkins()) do
+            menu:GetHandle().skin:addParam("skin"..i, name, SCRIPT_PARAM_ONOFF, false)
+        end
+        skinNumber = #champ:GetSkins()
+    end
 
     menu:SetTargetSelector(STS)
     menu:SetOrbwalker(OW)
@@ -266,6 +287,31 @@ function __mixColors()
     end
 end
 
+-- Credits to shalzuth for this!
+function GenModelPacket(champ, skinId)
+    p = CLoLPacket(0x97)
+    p:EncodeF(player.networkID)
+    p.pos = 1
+    t1 = p:Decode1()
+    t2 = p:Decode1()
+    t3 = p:Decode1()
+    t4 = p:Decode1()
+    p:Encode1(t1)
+    p:Encode1(t2)
+    p:Encode1(t3)
+    p:Encode1(bit32.band(t4,0xB))
+    p:Encode1(1)--hardcode 1 bitfield
+    p:Encode4(skinId)
+    for i = 1, #champ do
+        p:Encode1(string.byte(champ:sub(i,i)))
+    end
+    for i = #champ + 1, 64 do
+        p:Encode1(0)
+    end
+    p:Hide()
+    RecvPacket(p)
+end
+
 --[[
     ██████╗ ██╗     ██╗████████╗███████╗ ██████╗██████╗  █████╗ ███╗   ██╗██╗  ██╗
     ██╔══██╗██║     ██║╚══██╔══╝╚══███╔╝██╔════╝██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝
@@ -295,6 +341,19 @@ function Blitzcrank:__init()
     DLib:RegisterDamageSource(_Q, _MAGIC, 80,  55,  _MAGIC, _AP, 1, function() return spells[_Q]:IsReady() end)
     DLib:RegisterDamageSource(_R, _MAGIC, 250, 125, _MAGIC, _AP, 1, function() return spells[_R]:IsReady() end)
 
+end
+
+function Blitzcrank:GetSkins()
+    return {
+        "Classic",
+        "Rusty",
+        "Goalkeeper",
+        "Boom Boom",
+        "Piltover Customs",
+        "Definitely Not Blitzcrank",
+        "iBlitzcrank",
+        "Riot"
+    }
 end
 
 function Blitzcrank:CheckHeroCollision(pos)
@@ -525,6 +584,16 @@ function Brand:__init()
 
 end
 
+function Brand:GetSkins()
+    return {
+        "Classic",
+        "Apocalyptic",
+        "Vandal",
+        "Cryocore",
+        "Zombie"
+    }
+end
+
 function Brand:IsAblazed(target)
     return HasBuff(target, "brandablaze")
 end
@@ -609,7 +678,7 @@ function Brand:OnCombo()
     end
 
     if menu.combo.useQ and targets[_Q] and spells[_Q]:IsReady() then
-        if self:IsAblazed(targets[_Q]) or not menu.misc.ablazed or DLib:IsKillable(targets[_Q], {_Q}) then
+        if self:IsAblazed(targets[_Q]) or not menu.misc.ablazed or DLib:IsKillable(targets[_Q], {_Q, _PASIVE}) then
             if not menu.combo.useE or not targets[_E] or not spells[_E]:IsReady() then
                 if not menu.combo.useW or not targets[_W] or not spells[_W]:IsReady() then
                     status = spells[_Q]:Cast(targets[_Q])
@@ -626,7 +695,7 @@ function Brand:OnCombo()
         end
     end
 
-    if menu.combo.useE and targets[_E] and spells[_E]:IsReady() and (DLib:IsKillable(targets[_E], {_E}) or (spells[_Q]:IsReady() or spells[_W]:IsReady())) then
+    if menu.combo.useE and targets[_E] and spells[_E]:IsReady() and (DLib:IsKillable(targets[_E], self.mainCombo) or (spells[_Q]:IsReady() or spells[_W]:IsReady())) then
         spells[_E]:Cast(targets[_E])
     end
 
@@ -889,6 +958,15 @@ function Xerath:__init()
         end
     end, 1)
 
+end
+
+function Xerath:GetSkins()
+    return {
+        "Classic",
+        "Runeborn",
+        "Battlecast",
+        "Scorched Earth"
+    }
 end
 
 function Xerath:OnCombo()
