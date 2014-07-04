@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.006
+local version = 0.007
 
 local scriptName = "MehAIO"
 
@@ -29,9 +29,9 @@ local scriptName = "MehAIO"
 local champions = {
     ["Blitzcrank"]   = true,
     ["Brand"]        = true,
+    --["Nasus"]        = true,
     --["Orianna"]      = true,
     --["Veigar"]       = true,
-    --["Nasus"]        = true,
     ["Xerath"]       = true
 }
 
@@ -389,7 +389,7 @@ end
 function Blitzcrank:OnRecvPacket(p)
 
     -- Casted Q
-    if p.header == 0xB4 then
+    if p.header == 0xB5 then
         p.pos = 1
         local nwid = p:DecodeF()
         if nwid == player.networkID then
@@ -411,7 +411,7 @@ function Blitzcrank:OnRecvPacket(p)
             end
         end
     -- Landed Q
-    elseif p.header == 0x25 then
+    elseif p.header == 0x26 then
         p.pos = 1
         local pr = p:DecodeF()
         if pr == self.projectileId and (os.clock() - self.projectileTime) < 2 then
