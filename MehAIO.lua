@@ -537,19 +537,16 @@ function Brand:OnTick()
     if menu.ult.castR and spells[_R]:IsReady() then
         local target = STS:GetTarget(spells[_R].range)
         spells[_R]:Cast(target)
-        skipCombo()
     end
 
     -- Farming
     if menu.farm.freeze or menu.farm.lane then
         self:OnFarm()
-        skipCombo()
     end
 
     -- Jungle farming
     if menu.jfarm.active then
         self:OnJungleFarm()
-        skipCombo()
     end
 
     -- Misc stuff
@@ -668,19 +665,14 @@ function Brand:OnHarass()
     local targets = {
         [_Q] = STS:GetTarget(spells[_Q].range),
         [_W] = STS:GetTarget(spells[_W].range),
-        [_E] = STS:GetTarget(spells[_E].range),
     }
 
-    if menu.harass.useQ and targets[_Q] and spells[_Q]:IsReady() and (self:IsAblazed(targets[_Q]) or not menu.misc.ablazed) and (not targets[_E] or not spells[_E]:IsReady() or not menu.harass.useE) then
+    if menu.harass.useQ and targets[_Q] and spells[_Q]:IsReady() then
         spells[_Q]:Cast(targets[_Q])
     end
 
     if menu.harass.useW and targets[_W] and spells[_W]:IsReady() then
         spells[_W]:Cast(targets[_W])
-    end
-
-    if menu.harass.useE and targets[_E] and spells[_E]:IsReady() then
-        spells[_E]:Cast(targets[_E])
     end
 
 end
