@@ -74,6 +74,8 @@ function Xerath:__init()
         end
     end, 1)
 
+    PacketHandler:HookOutgoingPacket(Packet.headers.S_MOVE, function(p) self:OnSendMove(p) end)
+
 end
 
 function Xerath:GetSkins()
@@ -415,20 +417,18 @@ function Xerath:IsCastingUlt()
     return ((os.clock() - self.ultData.castTime) < 10 and (spells[_R]:GetCooldown(true) < 10))
 end
 
-function Xerath:OnSendPacket(p)
+function Xerath:OnSendMove(p)
     
-    if p.header == Packet.headers.S_MOVE then
-        -- Block auto-attack while charging
-        if spells[_Q]:IsCharging() then
-            local packet = Packet(p)
-            if packet:get("type") ~= 2 then
-                Packet('S_MOVE', { x = mousePos.x, y = mousePos.z }):send()
-                p:Block()
-            end
-        -- Block moving while casting R
-        elseif self:IsCastingUlt() then
+    -- Block auto-attack while charging
+    if spells[_Q]:IsCharging() then
+        local packet = Packet(p)
+        if packet:get("type") ~= 2 then
+            Packet('S_MOVE', { x = mousePos.x, y = mousePos.z }):send()
             p:Block()
         end
+    -- Block moving while casting R
+    elseif self:IsCastingUlt() then
+        p:Block()
     end
 
 end
