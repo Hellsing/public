@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.008
+local version = 1.008
 
 local scriptName = "MehAIO"
 
@@ -310,8 +310,8 @@ function GenModelPacket(champ, skinId)
     end
     p:Hide()
     RecvPacket(p)
-end
-
+end  
+ 
 --[[
     ██████╗ ██╗     ██╗████████╗███████╗ ██████╗██████╗  █████╗ ███╗   ██╗██╗  ██╗
     ██╔══██╗██║     ██║╚══██╔══╝╚══███╔╝██╔════╝██╔══██╗██╔══██╗████╗  ██║██║ ██╔╝
@@ -542,9 +542,8 @@ function Blitzcrank:ApplyMenu()
     menu:addParam("autoE",     "Auto-E after grab", SCRIPT_PARAM_ONOFF, true)
     menu:addParam("killsteal", "Killsteal with R",  SCRIPT_PARAM_ONOFF, false)
 
-end
-
-
+end  
+ 
 --[[
     ██████╗ ██████╗  █████╗ ███╗   ██╗██████╗ 
     ██╔══██╗██╔══██╗██╔══██╗████╗  ██║██╔══██╗
@@ -670,6 +669,7 @@ function Brand:OnCombo()
         [_R] = STS:GetTarget(spells[_R].range),
     }
     local status = nil
+    local spellTriggered = nil
 
     OW:DisableAttacks()
 
@@ -690,13 +690,13 @@ function Brand:OnCombo()
     if menu.combo.useW and targets[_W] and spells[_W]:IsReady() then
         if not menu.combo.useE or not targets[_E] or not spells[_E]:IsReady() then
             if not status or status == SPELLSTATE_COLLISION then
-                spells[_W]:Cast(targets[_W])
+                spellTriggered = spellTriggered or spells[_W]:Cast(targets[_W]) == SPELLSTATE_TRIGGERED
             end
         end
     end
 
     if menu.combo.useE and targets[_E] and spells[_E]:IsReady() and (DLib:IsKillable(targets[_E], self.mainCombo) or (spells[_Q]:IsReady() or spells[_W]:IsReady())) then
-        spells[_E]:Cast(targets[_E])
+        spellTriggered = spellTriggered or spells[_E]:Cast(targets[_E]) == SPELLSTATE_TRIGGERED
     end
 
     local igniteTarget = STS:GetTarget(600)
@@ -709,20 +709,24 @@ function Brand:OnCombo()
             -- Regular kill
             if (not spells[_Q]:IsReady() or not status or status == SPELLSTATE_COLLISION) and DLib:IsKillable(targets[_R], self.mainCombo) then
                 if spells[_E]:IsReady() and _GetDistanceSqr(targets[_R]) <= spells[_E].rangeSqr then
-                    spells[_E]:Cast(targets[_R])
+                    spellTriggered = spellTriggered or spells[_E]:Cast(targets[_R]) == SPELLSTATE_TRIGGERED
                 end
-                spells[_R]:Cast(targets[_R])
+                spellTriggered = spellTriggered or spells[_R]:Cast(targets[_R]) == SPELLSTATE_TRIGGERED
             end
             -- Bounce kill
             self.enemyMinions:update()
             local enemies = SelectUnits(MergeTables(self.enemyMinions.objects, GetEnemyHeroes()), function(t) return ValidTarget(t) and _GetDistanceSqr(t, targets[_R]) < 202500 end)
             if #enemies > 1 and DLib:IsKillable(targets[_R], self.bounceCombo) then
                 if not self:IsAblazed(targets[_R]) and spells[_E]:IsReady() and _GetDistanceSqr(targets[_R]) < spells[_E].rangeSqr then
-                    if spells[_E]:Cast(targets[_R]) ~= SPELLSTATE_TRIGGERED then return end
+                    if spells[_E]:Cast(targets[_R]) ~= SPELLSTATE_TRIGGERED then OW:EnableAttacks() return end
                 end
-                spells[_R]:Cast(targets[_R])
+                spellTriggered = spellTriggered or spells[_R]:Cast(targets[_R]) == SPELLSTATE_TRIGGERED
             end
         end
+    end
+
+    if not spellTriggered or status ~= SPELLSTATE_TRIGGERED then
+        OW:EnableAttacks()
     end
 
 end
@@ -879,9 +883,8 @@ function Brand:ApplyMenu()
     end
     DLib:AddToMenu(menu.drawing, self.mainCombo)
 
-end
-
-
+end  
+ 
 --[[
     ██╗  ██╗███████╗██████╗  █████╗ ████████╗██╗  ██╗
     ╚██╗██╔╝██╔════╝██╔══██╗██╔══██╗╚══██╔══╝██║  ██║
@@ -1429,4 +1432,6 @@ function Xerath:ApplyMenu()
     menu:addParam("sep", "",                          SCRIPT_PARAM_INFO, "")
     menu:addParam("aa",  "Don't AA when enemy above", SCRIPT_PARAM_SLICE, 200, 100, 1000, 1)
 
-end
+end  
+ 
+-- Copyright (c) 2014 - Hellsing
