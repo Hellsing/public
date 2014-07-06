@@ -535,6 +535,7 @@ function Xerath:ApplyMenu()
     -- Drawing
     menu:addSubMenu("Drawing", "drawing")
         AAcircle:AddToMenu(menu.drawing, "AA Range", false, true, true)
+        DM:CreateCircle(player, spellData[_Q].rangeMax, 2, { 150, 0x0F, 0x37, 0xFF }):AddToMenu(menu.drawing, "Q Range (max)", true, true, true)
         for spell, circle in pairs(circles) do
             circle:AddToMenu(menu.drawing, SpellToString(spell).." Range", true, true, true)
         end
