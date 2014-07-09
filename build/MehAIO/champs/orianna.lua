@@ -18,8 +18,7 @@ function Orianna:__init()
     initializeSpells()
 
     -- Finetune spells
-    spells[_Q]:SetAOE(true, spellData[_Q].radius)
-    spells[_E].SetSkillshot(VP, SKILLSHOT_LINEAR, spellData[_E].width, spellData[_E].delay, spellData[_E].speed, false)
+    spells[_E]:SetSkillshot(VP, SKILLSHOT_LINEAR, spellData[_E].width, spellData[_E].delay, spellData[_E].speed, false)
     spells[_E].skillshotType = nil
     spells[_W].packetCast = true
     spells[_R].packetCast = true
@@ -27,9 +26,9 @@ function Orianna:__init()
     -- Circle customization
     circles[_Q].color = { 255, 255, 100, 0 }
     circles[_Q].width = 2
-    circles[_W].SetEnabled(false)
-    circles[_E]:SetEnabled(false)
-    circles[_R]:SetEnabled(false)
+    circles[_W].enabled = false
+    circles[_E].enabled = false
+    circles[_R].enabled = false
 
     -- Minions
     self.enemyMinions  = minionManager(MINION_ENEMY,  spells[_Q].range, player, MINION_SORT_MAXHEALTH_DEC)
@@ -44,13 +43,13 @@ function Orianna:__init()
     DLib:RegisterDamageSource(_R, _MAGIC, 150, 75, _MAGIC, _AP, 0.7, function() return spells[_R]:IsReady() end)
     DLib:RegisterDamageSource(_PASIVE, _MAGIC, 0, 0, _MAGIC, _AP, 0.15, nil, function(target) return 10 + (player.level > 3 and (math.floor((player.level - 1) / 3) * 8) or 0) end)
 
-    self.ballPos = player.visionPos
+    self.ballPos = player
     self.ballMoving = false
 
     self.ballCircles = {
-        DM:CreateCircle(ballPos, 50, 2, { 255, 200, 0, 0 }):SetDrawCondition(function() return not self.ballMoving end),
-        DM:CreateCircle(ballPos, spellData[_W].width, 2, { 200, 200, 0, 255 }):SetDrawCondition(function() return not self.ballMoving and spells[_W]:IsReady() end):SetEnabled(false),
-        DM:CreateCircle(ballPos, spellData[_R].width, 2, { 255, 200, 0, 255 }):SetDrawCondition(function() return not self.ballMoving and spells[_R]:IsReady() end):SetEnabled(false)
+        DM:CreateCircle(self.ballPos, 50, 5, { 255, 200, 0, 0 }):SetDrawCondition(function() return not self.ballMoving and (not self.ballPos.networkID or self.ballPos.networkID ~= player.networkID) end),
+        DM:CreateCircle(self.ballPos, spellData[_W].width, 1, { 200, 200, 0, 255 }):SetDrawCondition(function() return not self.ballMoving and spells[_W]:IsReady() end),
+        DM:CreateCircle(self.ballPos, spellData[_R].width, 1, { 255, 200, 0, 255 }):SetDrawCondition(function() return not self.ballMoving and spells[_R]:IsReady() end)
     }
 
     -- Auto update ball circles
@@ -106,13 +105,17 @@ function Orianna:__init()
         ["Velkoz"]   = "VelkozR"
     }
 
-    self.farDistance = 1.3
-
+    -- Precise packet hooks
     PacketHandler:HookOutgoingPacket(Packet.headers.S_CAST, function(p) self:OnCastSpell(p) end)
+
+    -- Other helper values
+    self.nearEnemyHeroes = false
+    self.farRange = 1.3
 
 end
 
-function Orianna:GetSkins()
+-- Not working with Orianna, sorry guys :/
+--[[function Orianna:GetSkins()
     return {
         "Classic",
         "Gothic",
@@ -120,65 +123,62 @@ function Orianna:GetSkins()
         "Bladecraft",
         "TPA"
     }
-end
+end]]
 
 function Orianna:OnTick()
 
-    OnTickChecks()
+    -- Enemy check
+    self.nearEnemyHeroes = CountEnemyHeroInRange(spells[_Q].range + spellData[_R].width)
 
     OW:EnableAttacks()
     OW:ForceTarget()
 
-    local target = GetBestTarget(Qrange + Qradius)
-    if not target then
-        target = GetBestTarget(Qrange + Qradius * 2)
-    end
-    if Menu.Combo.Enabled then
-        Combo(target)
-    elseif (Menu.Harass.Enabled or Menu.Harass.Enabled2) and (Menu.Harass.ManaCheck <= (myHero.mana / myHero.maxMana * 100)) then
-        Harass(target)
-    end
+    -- Disable spellcasting attempts while ball is moving
+    if self.ballMoving then skipCombo() return end
 
-    if Menu.Farm.Freeze or Menu.Farm.LaneClear then
-        local Mode = Menu.Farm.Freeze and "Freeze" or "LaneClear"
-        if Menu.Farm.ManaCheck >= (myHero.mana / myHero.maxMana * 100) then
-            Mode = "Freeze"
-        end
-
-        Farm(Mode)
+    -- Lane farm
+    if menu.farm.freeze or menu.farm.lane then
+        self:OnFarm()
     end
     
-    if Menu.JungleFarm.Enabled then
-        FarmJungle()
+    -- Jungle farm
+    if menu.jfarm.active then
+        self:OnJungleFarm()
     end
+
+    -- Auto E initiators
+    if menu.misc.autoE.active and spells[_E]:IsReady() then
+        for _, ally in ipairs(GetAllyHeroes()) do
+            if _GetDistanceSqr(ally) < spells[_E].rangeSqr then
+                local data = self.initiatorList[ally.charName]
+                if data then
+                    for _, spell in ipairs(data) do
+                        if self.lastSpellUsed[ally.networkID] and menu.misc.autoE[spell.spellName .. self.lastSpellUsed[ally.networkID].spellName] and (os.clock() - self.lastSpellUsed[ally.networkID].time < 1.5) then
+                            spells[_E]:Cast(ally)
+                        end
+                    end
+                end
+            end
+        end
+    end
+
+    -- No checks when no enemies around
+    if self.nearEnemyHeroes == 0 then return end
 
     -- Auto W
     if menu.misc.autoW > 1 and spells[_W]:IsReady() then
         local hitNum = self:GetEnemiesHitByW()
         if hitNum >= menu.misc.autoW - 1 then
             spells[_W]:Cast()
-        end     
+        end
     end
     
     -- Auto R
     if menu.misc.autoR > 1 and spells[_R]:IsReady() then
-        local hitNum = self:GetEnemiesHitByR()()
-        if hitNum >= menu.misc.autoR - 1 and self:GetDistanceToClosestAlly(self.ballPos) < spells[_Q].rangeSqr * (self.farDistance ^ 2) then
+        local hitNum = self:GetEnemiesHitByR()
+        if hitNum >= menu.misc.autoR - 1 and self:GetDistanceToClosestAlly(self.ballPos) < spells[_Q].rangeSqr * self.farRange then
             spells[_R]:Cast()
         end     
-    end
-    
-    -- Auto E initiators
-    if menu.misc.autoE.active and spells[_E]:IsReady() then
-        for _, ally in ipairs(GetAllyHeroes()) do
-            if _GetDistanceSqr(ally) < spells[_E].rangeSqr then
-                for champion in pairs(self.initiatorList) do
-                    if self.lastSpellUsed[ally.networkID] and self.lastSpellUsed[ally.networkID].spellName ~= nil and menu.misc.autoE[champion .. self.lastSpellUsed[ally.networkID].spellName] and (os.clock() - self.lastSpellUsed[ally.networkID].time < 1.5) then
-                        spells[_E]:Cast(ally)
-                    end
-                end
-            end
-        end
     end
 
     -- Auto R interrupt
@@ -187,7 +187,7 @@ function Orianna:OnTick()
             for champion, spell in pairs(self.interruptList) do
                 if _GetDistanceSqr(enemy) < spells[_Q].rangeSqr and self.lastSpellUsed[enemy.networkID] and spell == self.lastSpellUsed[enemy.networkID].spellName and (os.clock() - self.lastSpellUsed[enemy.networkID].time < 1) then
                     spells[_Q]:Cast(enemy.x, enemy.z)
-                    if _GetDistanceSqr(self.ballPos, enemy) < spells[_R].width ^ 2 then
+                    if _GetDistanceSqr(self.ballPos, enemy) < spellData[_R].width ^ 2 then
                         spells[_R]:Cast()
                     end
                 end
@@ -198,9 +198,134 @@ function Orianna:OnTick()
 end
 
 function Orianna:OnCombo()
+
+    -- Fighting a single target
+    if self.nearEnemyHeroes == 1 then
+
+        local target = STS:GetTarget(spells[_Q].range + spells[_Q].width)
+
+        -- No target found, return
+        if not target then return end
+
+        -- Disable autoattacks due to danger or target being too close
+        if ((_GetDistanceSqr(target) < 300 * 300) or ((player.health / player.maxHealth < 0.25) and (player.health / player.maxHealth < target.health / target.maxHealth))) then
+            OW:DisableAttacks()
+        end
+
+        -- Cast ult if target is killable
+        if menu.combo.useR and spells[_R]:IsReady() and CountEnemyHeroInRange(1000, target) >= CountAllyHeroInRange(1000, target)  then
+            if DLib:IsKillable(target, self.mainCombo) and GetDistanceToClosestAlly(self.ballPos) < spells[_Q].range * self.farRange then
+                if self:GetEnemiesHitByR() >= menu.combo.numR then
+                    spells[_R]:Cast(target)
+                end
+            end
+        end
+
+        -- Cast W if it will hit
+        if menu.combo.useW and spells[_W]:IsReady() then
+            if self:GetEnemiesHitByW() > 0 then
+                spells[_W]:Cast()
+            end
+        end
+        
+        -- Cast Q
+        if menu.combo.useQ and spells[_Q]:IsReady() then
+            self:PredictCastQ(target)
+        end
+        
+        -- Cast E
+        if menu.combo.useE and spells[_E]:IsReady() then
+            -- Cast E on ally for gap closing
+            for _, ally in ipairs(GetAllyHeroes()) do
+                if ValidTarget(ally, spells[_E].range, false) and CountEnemyHeroInRange(400, ally) > 0 and _GetDistanceSqr(ally, target) < 400 * 400 then
+                    spells[_E]:Cast(ally)
+                    return
+                end
+            end
+            -- Cast E on self for damaging target
+            if self:GetEnemiesHitByE(player) > 0 then
+                spells[_E]:Cast(player)
+            end
+        end
+
+    -- Fighting multiple targets
+    elseif self.nearEnemyHeroes > 1 then
+
+        local target = STS:GetTarget(spells[_Q].range + spells[_Q].width)
+
+        -- No target found, return
+        if not target then return end
+
+        -- Disable attacks due to danger mode or target too close
+        for _, enemy in ipairs(GetEnemyHeroes()) do
+            if ValidTarget(enemy, 300) and (player.health / player.maxHealth < 0.25) then
+                OW:DisableAttacks()
+            end
+        end
+        
+        -- Cast W if it will hit
+        if menu.combo.useW and spells[_W]:IsReady() then
+            if self:GetEnemiesHitByW() > 0 then
+                spells[_W]:Cast()
+            end
+        end
+
+        -- Force the new target
+        if OW:InRange(target) then
+            OW:ForceTarget(target)
+        end
+
+        -- Cast Q on best location
+        if menu.combo.useQ and spells[_Q]:IsReady() then
+            local castPosition, hitNum = self:GetBestPositionQ(target)
+            
+            if castPosition and hitNum > 1 then
+                spells[_Q]:Cast(castPosition.x, castPosition.z)
+            else
+                self:PredictCastQ(target)
+            end
+        end
+        
+        -- Cast E
+        if menu.combo.useE and spells[_E]:IsReady() then
+            -- Cast on self for damaging enemies
+            if CountEnemyHeroInRange(800, self.ballPos) < 3 then
+                if self:GetEnemiesHitByE(player) > 0 then
+                    spells[_E]:Cast(player)
+                    return
+                end
+            else
+                if self:GetEnemiesHitByE(player) > 1 then
+                    spells[_E]:Cast(player)
+                    return
+                end
+            end
+            -- Cast on allies for gap closing
+            for _, ally in ipairs(GetAllyHeroes()) do
+                if ValidTarget(ally, spells[_E].range, false) and CountEnemyHeroInRange(300, ally) > 2 and _GetDistanceSqr(ally, target) < 300 * 300 then
+                    spells[_E]:Cast(ally)
+                    return
+                end
+            end
+        end
+    end
+
 end
 
 function Orianna:OnHarass()
+
+    if menu.harass.mana > (player.mana / player.maxMana) * 100 then return end
+
+    if menu.harass.useQ and spells[_Q]:IsReady() then
+        self:PredictCastQ(STS:GetTarget(spells[_Q].range + spells[_Q].width))
+    end
+
+    if menu.harass.useW and spells[_W]:IsReady() then
+        if self:GetEnemiesHitByW() > 0 then
+            spells[_W]:Cast()
+        end
+    end
+
 end
 
 function Orianna:OnFarm()
@@ -269,11 +394,11 @@ function Orianna:OnJungleFarm()
     
     if minion then
         if useQ then
-            local position = GetPredictedPos(minion, spells[_Q].delay, BallSpeed, BallPos)
+            local position = GetPredictedPos(minion, spells[_Q].delay, spells[_Q].speed, self.ballPos)
             CastSpell(_Q, position.x, position.z)
         end
         
-        if useW and _GetDistanceSqr(self.ballPos, minion) < spells[_W].width ^ 2 then
+        if useW and _GetDistanceSqr(self.ballPos, minion) < spellData[_W].width ^ 2 then
             spells[_W]:Cast()
         end
         
@@ -288,6 +413,125 @@ function Orianna:OnJungleFarm()
                 end
             end
             spells[_E]:Cast(target)
+        end
+    end
+
+end
+
+function Orianna:PredictCastQ(target)
+
+    -- No target found, return
+    if not target then return end
+
+    -- Helpers
+    local castPoint = nil
+
+    spells[_Q]:SetSourcePosition(self.ballPos)
+    spells[_Q]:SetRange(math.huge)
+    local castPosition, hitChance, position = spells[_Q]:GetPrediction(target)
+    spells[_Q]:SetRange(spellData[_Q].range)
+
+    -- Update castPoint
+    castPoint = castPosition
+
+    -- Hitchance too low, return
+    if hitChance < 2 then return end
+
+    -- Main target out of range, getting new target
+    if _GetDistanceSqr(position) > spells[_Q].rangeSqr + (spellData[_W].width + VP:GetHitBox(target)) ^ 2 then
+        target2 = STS:GetTarget(spells[_Q].range + spellData[_W].width + 250, 2)
+        if target2 then
+            spells[_Q]:SetRange(math.huge)
+            castPoint = spells[_Q]:GetPrediction(target2)
+            spells[_Q]:SetRange(spellData[_Q].range)
+        else return end
+    end
+
+    -- Second target out of range aswell, return
+    if _GetDistanceSqr(position) > spells[_Q].rangeSqr + (spellData[_W].width + VP:GetHitBox(target)) ^ 2 then
+        do return end
+    end
+
+    -- EQ calculation for faster Q on target, only if enabled in menu
+    if spells[_E]:IsReady() and menu.misc.EQ ~= 0 then
+        local travelTime = _GetDistanceSqr(self.ballPos, castPoint) / (spells[_Q].speed ^ 2)
+        local minTravelTime = _GetDistanceSqr(castPoint) / (spells[_Q].speed ^ 2) + _GetDistanceSqr(self.ballPos) / (spells[_E].speed ^ 2)
+        local target = player
+
+        for _, ally in ipairs(GetAllyHeroes()) do
+            if ally.networkID ~= player.networkID and ValidTarget(ally, spells[_E].range, false) then
+                local time = _GetDistanceSqr(ally, castPoint) / (spells[_Q].speed ^ 2) + _GetDistanceSqr(ally, self.ballPos) / (spells[_E].speed ^ 2)
+                if time < minTravelTime then
+                    minTravelTime = time
+                    target = ally
+                end
+            end
+        end
+
+        if minTravelTime < (menu.misc.EQ / 100) * travelTime and (not target.isMe or _GetDistanceSqr(self.ballPos) > 100 * 100) and _GetDistanceSqr(target) < _GetDistanceSqr(castPoint) then
+            spells[_E]:Cast(target)
+            return
+        end
+    end
+
+    -- Cast point adjusting if it's slightly out of range
+    if _GetDistanceSqr(castPoint) > spells[_Q].rangeSqr then
+        castPoint = Vector(player.visionPos) + spells[_Q].range * (Vector(castPoint) - Vector(player.visionPos)):normalized()
+    end
+
+    -- Cast Q
+    spells[_Q]:Cast(castPoint.x, castPoint.z)
+
+end
+
+function Orianna:GetBestPositionQ(target)
+
+    local points = {}
+    local targets = {}
+    
+    spells[_Q]:SetSourcePosition(self.ballPos)
+    local castPosition, hitChance, position = spells[_Q]:GetPrediction(target)
+
+    table.insert(points, position)
+    table.insert(targets, target)
+    
+    for _, enemy in ipairs(GetEnemyHeroes()) do
+        if ValidTarget(enemy, spells[_Q].range + spellData[_R].width) and enemy.networkID ~= target.networkID then
+            castPosition, hitChance, position = spells[_Q]:GetPrediction(enemy)
+            table.insert(points, position)
+            table.insert(targets, enemy)
+        end
+    end
+    
+    for o = 1, 5 do
+        local circle = MEC(points):Compute()
+        
+        if circle.radius <= spellData[_R].width and #points >= 3 and spells[_R]:IsReady() then
+            return circle.center, 3
+        end
+    
+        if circle.radius <= spellData[_W].width and #points >= 2 and spells[_W]:IsReady() then
+            return circle.center, 2
+        end
+        
+        if #points == 1 then
+            return circle.center, 1
+        elseif circle.radius <= spellData[_Q].radius and #points >= 1 then
+            return circle.center, 2
+        end
+        
+        local distance = -1
+        local mainPoint = points[1]
+        local index = 0
+        
+        for i = 2, #points do
+            if _GetDistanceSqr(points[i], mainPoint) > distance then
+                distance = _GetDistanceSqr(points[i], mainPoint)
+                index = i
+            end
+        end
+        if index > 0 then
+            table.remove(points, index)
         end
     end
 
@@ -347,7 +591,7 @@ function Orianna:GetMinionsHitE()
     local minions = {}
     local sourcePoint = Vector(self.ballPos.x, 0, self.ballPos.z)
     local destPoint = Vector(player.x, 0, player.z)
-    for _, minion in ipairs(EnemyMinions.objects) do
+    for _, minion in ipairs(self.enemyMinions.objects) do
         local position = Vector(minion.x, 0, minion.z)
         local pointInLine = VectorPointProjectionOnLineSegment(sourcePoint, destPoint, position)
         if _GetDistanceSqr(pointInLine, position) < spells[_E].width ^ 2 then
@@ -360,7 +604,7 @@ end
 
 function Orianna:GetDistanceToClosestAlly(point)
 
-    local distance = _GetDistanceSqr(point, player)
+    local distance = _GetDistanceSqr(point)
     for _, ally in ipairs(GetAllyHeroes()) do
         if ValidTarget(ally, math.huge, false) then
             local dist = _GetDistanceSqr(point, ally)
@@ -380,11 +624,11 @@ function Orianna:OnCreateObj(object)
 
     -- Ball to pos
     if object.name:lower():find("yomu_ring_green") then
-        self.ballPos = object
+        self.ballPos = Vector(object)
         self.ballMoving = false
     -- Ball to hero
     elseif object.name:lower():find("orianna_ball_flash_reverse") then
-        self.ballPos = player.visionPos
+        self.ballPos = player
         self.ballMoving = false
     end
 
@@ -393,7 +637,7 @@ end
 function Orianna:OnProcessSpell(unit, spell)
 
     -- Validating
-    if not unit or not unit.valid or not spell or not spell.name then return end
+    if not unit or not spell or not spell.name then return end
 
     if unit.isMe then
         -- Orianna Q
@@ -408,19 +652,31 @@ function Orianna:OnProcessSpell(unit, spell)
     end
 
     -- Initiator helper
-    if unit.type == player.type then
+    if unit.type == player.type and unit.team == player.team then
         self.lastSpellUsed[unit.networkID] = { spellName = spell.name, time = os.clock() }
+        -- Instant shield
+        if _GetDistanceSqr(unit) < spells[_E].rangeSqr then
+            local data = self.initiatorList[unit.charName]
+            if data then
+                for _, spell in ipairs(data) do
+                    if spell.spellName == spell.name then
+                        spells[_E]:Cast(unit)
+                    end
+                end
+            end
+        end
     end
+
 end
 
-function OnGainBuff(unit, buff)
+function Orianna:OnGainBuff(unit, buff)
 
     -- Validating
-    if not unit or not unit.valid or not unit.team or not buff or not buff.name then return end
+    if not unit or not unit.team or not buff or not buff.name then return end
 
-    -- Ball applying to ally
-    if unit.team == player.team and buff.name:lower():find("orianaghostself") then
-        self.ballPos = unit.visionPos
+    -- Ball applying to unit
+    if unit.team == player.team and buff.name:lower():find("orianaghostself") or buff.name:lower():find("orianaghost") then
+        self.ballPos = unit
         self.ballMoving = false
     end
 
@@ -430,8 +686,7 @@ function Orianna:OnCastSpell(p)
 
     if menu.misc.blockR then
         if Packet(p):get('spellId') == _R then
-            local hitNum = self:GetEnemiesHitByR()
-            if hitNum == 0 then
+            if self:GetEnemiesHitByR() == 0 then
                 p:Block()
             end
         end
@@ -460,11 +715,12 @@ function Orianna:ApplyMenu()
     menu:addSubMenu("Misc", "misc")
         menu.misc:addSubMenu("Auto E on initiators", "autoE")
         local added = false
-        for champion, spells in pairs(self.initiatorList) do
-            if table.contains(GetAllyHeroes(), champion) then
-                for _, data in ipairs(spells) do
+        for _, ally in ipairs(GetAllyHeroes()) do
+            local data = self.initiatorList[ally.charName]
+            if data then
+                for _, spell in ipairs(data) do
                     added = true
-                    menu.misc.autoE:addParam(champion..data.spellName, data.displayName, SCRIPT_PARAM_ONOFF, true)
+                    menu.misc.autoE:addParam(ally.charName..spell.spellName, spell.displayName, SCRIPT_PARAM_ONOFF, true)
                 end
             end
         end

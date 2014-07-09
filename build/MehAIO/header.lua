@@ -30,7 +30,7 @@ local champions = {
     ["Blitzcrank"]   = true,
     ["Brand"]        = true,
     --["Nasus"]        = true,
-    --["Orianna"]      = true,
+    ["Orianna"]      = true,
     --["Veigar"]       = true,
     ["Xerath"]       = true
 }
@@ -103,13 +103,6 @@ local __colors = {
 
 function OnLoad()
 
-    -- Temp fix by Trees
-    if _G.Packet.headers.S_CAST == 0x77 then
-        _G.Packet.headers.S_CAST = 0x9A
-        LoadVIPScript('VjUjKAJMMjdwT015VOpbQ0pGMzN0S0V5TXlWSFJIMzN0TUU5TRxWSVBGc7P0VEX5TXtWSVBIMDN0Sxo+TX1cSVBMRFYRLwAYORwkSVFMMzN1S0V5TnlWSVNMOj90S0W/TTlWTxEMM3X1C0X5THlXFNFMMrN1y0W9THlWSVJMMy51y0ekzXlWlBDMMyx0y0V6TXlWTVdMMzMVODYcPw1WTVVMMzMYJCQdTX1bSVBMcVIHLnNNCRw1JjQpMzN0S0V4TXlWSVBMMzN0S0V5TXlWSVBMMzN0SkV5TXhWSVBMMzN0S0V5TXlWSVBMMw==8A09C216FE9B42101D7EE476E3C4AB3E')
-        weedEater(_ENV, '4_11.Fix', 'G0x1YVIAAQQEBAgAGZMNChoKAAAAAAAAAAAAAQNaAAAABgBAAAdAQAAHgEAACgDBgQYAQAAHQEAAB4BAAAqAwYIGAEAAB0BAAAeAQAAKAMKDBgBAAAdAQAAHgEAACoDChAYAQAAHQEAAB4BAAAoAw4UGAEAAB0BAAAeAQAAKgMOGBgBAAAdAQAAHgEAACgDEhwYAQAAHQEAAB4BAAAqAxIgGAEAAB0BAAAeAQAAKAMWJBgBAAAdAQAAHgEAACoDFigYAQAAHQEAAB4BAAAoAxosGAEAAB0BAAAeAQAAKgMaMBgBAAAdAQAAHgEAACgDHjQYAQAAHQEAAB4BAAAqAx44GAEAAB0BAAAeAQAAKAMiPBgBAAAdAQAAHgEAACoDIkAYAQAAHQEAAB4BAAAoAyZEGAEAAB0BAAAeAQAAKgMmSBgBAAAdAQAAHgEAACgDKkwYAQABlAAAACkCAlAYAQABlQAAACkAAlQbASgAMAEsAgUALAB2AgAEJAAAAJYAAAAgAAJcfAIAALwAAAAQDAAAAX0cABAcAAABQYWNrZXQABAgAAABoZWFkZXJzAAQcAAAAUEtUX1dvcmxkX1NlbmRDYW1lcmFfU2VydmVyAAMAAAAAAABHQAQYAAAAUEtUX05QQ19VcGdyYWRlU3BlbGxSZXEAAwAAAAAAgExABAcAAABTX1BJTkcAAwAAAAAAwFVABAcAAABTX01PVkUAAwAAAAAAgFxABA8AAABQS1RfQnV5SXRlbVJlcQADAAAAAABAYEAEBwAAAFNfQ0FTVAADAAAAAABAY0AEEwAAAFBLVF9TMkNfVXBkYXRlVW5pdAADAAAAAACAaEAEDAAAAFJfV0FZUE9JTlRTAAMAAAAAAEBYQAQpAAAAUEtUX1dvcmxkX1NlbmRDYW1lcmFfU2VydmVyX0Fja25vbG9nbWVudAADAAAAAAAARkAEEAAAAFBLVF9Td2FwSXRlbUFucwADAAAAAAAAT0AEDgAAAFBLVF9TMkNfQWdncm8AAwAAAAAAAGhABBMAAABQS1RfUzJDX1Rvd2VyQWdncm8AAwAAAAAAgFpABBUAAABQS1RfUzJDX0xldmVsVXBTcGVsbAADAAAAAAAANUAEEwAAAFBLVF9TMkNfR2FpblZpc2lvbgADAAAAAADAZUAEEwAAAFBLVF9TMkNfTG9zZVZpc2lvbgADAAAAAAAASkAEGwAAAFBLVF9TMkNfSW5jcmVhc2VFeHBlcmllbmNlAAMAAAAAAAAwQAQHAAAAUl9QSU5HAAMAAAAAAABQQAQRAAAAUEtUX1MyQ19IaWRlVW5pdAADAAAAAABAVEAECwAAAFJfV0FZUE9JTlQAAwAAAAAAYGdABAsAAABMZXZlbFNwZWxsAAQIAAAAQnV5SXRlbQAEEQAAAEFkdmFuY2VkQ2FsbGJhY2sABAkAAAByZWdpc3RlcgAEBwAAAE9uRGFzaAAEDQAAAE9uUmVjdlBhY2tldAADAAAAGAAAABgAAAABAAULAAAARgBAAIFAAADLgAAABsFAAAcBQQLKAAGBygCAgl2AgAFMgMEAXUAAAR8AgAAHAAAABAcAAABQYWNrZXQABBgAAABQS1RfTlBDX1VwZ3JhZGVTcGVsbFJlcQAECgAAAG5ldHdvcmtJZAAEBwAAAG15SGVybwAECgAAAG5ldHdvcmtJRAAECAAAAHNwZWxsSWQABAUAAABzZW5kAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAGQAAABkAAAABAAULAAAARgBAAIFAAADLgAAABsFAAAcBQQLKAAGBygCAgl2AgAFMgMEAXUAAAR8AgAAHAAAABAcAAABQYWNrZXQABBMAAABQS1RfTlBDX0J1eUl0ZW1SZXEABAoAAABuZXR3b3JrSWQABAcAAABteUhlcm8ABAoAAABuZXR3b3JrSUQABAcAAABpdGVtSWQABAUAAABzZW5kAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAHAAAAG0AAAABABcpAQAARwBAABhAwAAXQBiACsBAgUxAQQBdgAABUIDBAAhAAIJMAEIAXYAAAQhAgINMAEIAXYAAAQhAgIQKgEKBTABCAF2AAAEIQICFTABCAF2AAAEIQACGCkBDgUaAQwBMwMMAzABCAN0AAAFdgAAAhoBDAIzAQwEGwUEAnYCAAZsAAAAXgEGAxwBEAdsAAAAXwECACkBEgcbARADHAMUBAAEAAEYBQQDdgIABCMAAicaARQAGwUIAR8FFAYYBQwDdgAACCMCAisaARQAGgUQARoFEAFUBgAIHQQECB8FCAkfBRQGGgUQAxoFEANUBgAOHwQEDh8FFA92AAAIIwACMxoBGAAYBRgBGQUUA3YCAAQjAgIzGQEYABkFCANAAgQEIwICNxgBHAMxAxwFAAQABiwECAMZBRQCKwYGKxgFGAIrBAYzGQUYAisGBjMZBQgCKwYGEikEAj8bBRgCKwYGPxkFIAN2BgACKwQGQxkFIAN2BgAAGwkYAzQGCA4rBAZHdgAACGMDIARdAMYDMAEkA3UAAAReAMIBHAEAAGEDJABcACYAKgEmBTABCAF2AAAGMQEEAnYAAAcxAQQDdgAABDEFBAB2BAAFMQUEAXYEAAYzBSQCdgQABzMFJAN2BAAEMwkkAHYIAAUwCQgBdggABjAJCAJ2CAAHGAkoAJQMAAEFDCgCLAwAEwAMAAwAEgAFABAABhoRKAMAEAAUABQACQAWABIAFgAKkQwAE3UIAApfAJoAXgCaARwBAABjAygAXQA2ACoBJgUwAQgBdgAABjEBBAJ2AAAHMQEEA3YAAAQwBQgAdgQABTAFCAF2BAAGMAUIAnYEAAcaBQwDMwcMDQAKAAN2BgAEYAMsDFwAAgB8AgAAMQssDjYJJAR2CgAEbAgAAF4AAgEeCSwRbQgAAFwAAgEHCCwCGAkcAjAJMBQADgANLAwIASkMCl4aDTABKg4OYSsOAmY2DSQFKgwOaSgOBj4ZDSACdg4AASoMDkIZDSACdg4AAjQMBB0qDA5GGg0MAjMNDBwAEAAOdg4ABSoODmp1CAAIXQBiARwBAABiAzQAXwAyACoBJgUwAQgBdgAABjEBBAJ2AAAHMAEIA3YAAAQwBQgAdgQABTAFCAF2BAAGGgUMAjMFDAwACgACdgYABGABLAxcAAIAfAIAAzEFLA02CSQHdgYAB2wEAABeAAIAHgssDG0IAABcAAIABwgsARgJHAEwCzATAAgADCwMCAAoDApdGg0wACkODmAqDyZlNg0kBCkMDmgoDgY9GQ0gAXYOAAApDA5BGQ0gAXYOAAE0DgQYKQwORRoNDAEzDwwbAA4ACXYOAAQpDg5pdQgACF4AKgEcAQAAYwM0AF8AJgAqASYFMAEIAXYAAAYxAQQCdgAABzMBJAN2AAAEMAUIAHYEAAUaBQwBMwcMCwAGAAF2BgAEYAMsCFwAAgB8AgACMQcsCDYJJAZ2BgAGbAQAAF4AAgMeBSwPbQQAAFwAAgMHBCwAGAkcADAJOBIACgALLwgEAysIBlwaDTADKAoOYBkNOAMoCg5kNg0kBygIDmspCyo/KQkqQykJKkR1CAAIfAIAAOgAAAAQHAAAAaGVhZGVyAAMAAAAAAABZQAQEAAAAcG9zAAMAAAAAAAAmQAQOAAAAd2F5cG9pbnRDb3VudAAECAAAAERlY29kZTEAAwAAAAAAAABABAoAAABuZXR3b3JrSUQABAgAAABEZWNvZGVGAAQGAAAAc3BlZWQAAwAAAAAAADhABAIAAAB4AAQCAAAAegADAAAAAACAQEAECwAAAG9iak1hbmFnZXIABBUAAABHZXRPYmplY3RCeU5ldHdvcmtJZAAEBgAAAHZhbGlkAAMAAAAAAIBIQAQKAAAAd2F5UG9pbnRzAAQHAAAAUGFja2V0AAQQAAAAZGVjb2RlV2F5UG9pbnRzAAQJAAAAc3RhcnRQb3MABAcAAABWZWN0b3IABAIAAAB5AAQHAAAAZW5kUG9zAAQJAAAAZGlzdGFuY2UABAwAAABHZXREaXN0YW5jZQAEBQAAAHRpbWUABBEAAABBZHZhbmNlZENhbGxiYWNrAAQHAAAAT25EYXNoAAQHAAAAdGFyZ2V0AAQJAAAAZHVyYXRpb24ABAcAAABzdGFydFQABA0AAABHZXRHYW1lVGltZXIABAUAAABlbmRUAAEABAYAAABCbG9jawADAAAAAADgZkADAAAAAAAA8D8ECAAAAERlY29kZTQABAwAAABEZWxheUFjdGlvbgADAAAAAAAAAAAEEAAAAHRhcmdldE5ldHdvcmtJZAADAAAAAAAAPEAABAgAAABnZXRCdWZmAAQFAAAAbmFtZQAEAQAAAAAEDQAAAE9uVXBkYXRlQnVmZgAEBQAAAHR5cGUABAoAAABCVUZGX05PTkUABAYAAABzdGFjawAEBQAAAHNsb3QABAcAAABzb3VyY2UAAwAAAAAAgEdAAwAAAAAAwF5ABAsAAABPbkxvc2VCdWZmAAQLAAAAc3RhY2tDb3VudAABAAAAQQAAAEcAAAAIABIpAAAABgJAAAxCQASFAoAAHYKAARiAQAQXAACAHwCAAEzCQATNAkEBXYKAAVsCAAAXgACAh0LBBJtCAAAXAACAgYIBAMbCQQDMAsIFQAMABItDAgCKg4KCikOBhM0DQQGKwwOFioOBhcZDQwDdg4AAisMDhorDAYfGQ0MA3YOAAM2DgQeKw4OHxgNAAMxDwAdABAAC3YOAAYrDA4iKQ4CI3UIAAh8AgAASAAAABAsAAABvYmpNYW5hZ2VyAAQVAAAAR2V0T2JqZWN0QnlOZXR3b3JrSWQAAAQIAAAAZ2V0QnVmZgADAAAAAAAA8D8EBQAAAG5hbWUABAEAAAAABBEAAABBZHZhbmNlZENhbGxiYWNrAAQLAAAAT25HYWluQnVmZgAEBgAAAHN0YWNrAAQFAAAAc2xvdAAECQAAAGR1cmF0aW9uAAQHAAAAc3RhcnRUAAQNAAAAR2V0R2FtZVRpbWVyAAQIAAAAdmlzaWJsZQAEBQAAAGVuZFQABAcAAABzb3VyY2UABAUAAAB0eXBlAAAAAAACAAAAAAABAQAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAEAAAAAAAAAAAAAAAAAAAAAAA==')
-    end
-
     -- Load dependencies
     VP   = VPrediction()
     OW   = SOW(VP)
@@ -124,7 +117,7 @@ function OnLoad()
     if not champ then print("There was an error while loading " .. player.charName .. ", please report the shown error to Hellsing, thanks!") champLoaded = false return end
 
     -- Auto attack range circle
-    AAcircle = DM:CreateCircle(player, OW:MyRange() + 50, 3)
+    AAcircle = DM:CreateCircle(player, OW:MyRange(), 3)
 
     -- Load menu
     loadMenu()
@@ -139,9 +132,9 @@ function OnLoad()
     if champ.OnSendChat     then AddChatCallback(function(text)                   champ:OnSendChat(text)            end) end
     if champ.OnRecvChat     then AddRecvChatCallback(function(text)               champ:OnRecvChat(text)            end) end
     if champ.OnWndMsg       then AddMsgCallback(function(msg, wParam)             champ:OnWndMsg(msg, wParam)       end) end
-    if champ.OnCreateObj    then AddCreateObjCallback(function(obj)               champ:OnCreateObj(object)         end) end
+    --if champ.OnCreateObj    then AddCreateObjCallback(function(obj)               champ:OnCreateObj(object)         end) end
     if champ.OnDeleteObj    then AddDeleteObjCallback(function(obj)               champ:OnDeleteObj(object)         end) end
-    if champ.OnProcessSpel  then AddProcessSpellCallback(function(unit, spell)    champ:OnProcessSpell(unit, spell) end) end
+    if champ.OnProcessSpell then AddProcessSpellCallback(function(unit, spell)    champ:OnProcessSpell(unit, spell) end) end
     if champ.OnSendPacket   then AddSendPacketCallback(function(p)                champ:OnSendPacket(p)             end) end
     if champ.OnRecvPacket   then AddRecvPacketCallback(function(p)                champ:OnRecvPacket(p)             end) end
     if champ.OnBugsplat     then AddBugsplatCallback(function()                   champ:OnBugsplat()                end) end
@@ -188,6 +181,7 @@ function OnDraw()
     AAcircle.color[2] = __colors[1].current
     AAcircle.color[3] = __colors[2].current
     AAcircle.color[4] = __colors[3].current
+    AAcircle.range    = OW:MyRange() 
 
     -- Skin changer
     if menu.skin then
@@ -200,6 +194,9 @@ function OnDraw()
     end
 
 end
+
+-- Spudgy please...
+function OnCreateObj(object) if champ.OnCreateObj then champ:OnCreateObj(object) end end
 
 --[[ Other Functions ]]--
 
@@ -323,10 +320,29 @@ function GetPredictedPos(unit, delay, speed, source)
     if menu.prediction.predictionType == 1 then
         return VP:GetPredictedPos(unit, delay, speed, source)
     elseif menu.prediction.predictionType == 2 then
-        if not speed and not source then
-            return Prodiction.GetTimePrediction(unit, delay)
-        else
-            return Prodiction.GetPrediction(unit, math.huge, speed, delay, 1, source)
+        return Prodiction.GetPrediction(unit, math.huge, speed, delay, 1, source)
+    end
+end
+
+function CountAllyHeroInRange(range, point)
+    local n = 0
+    for i, ally in ipairs(GetAllyHeroes()) do
+        if ValidTarget(ally, math.huge, false) and GetDistanceSqr(point, ally) <= range * range then
+            n = n + 1
         end
     end
+    return n
+end
+
+function GetDistanceToClosestAlly(p)
+    local d = GetDistance(p, myHero)
+    for i, ally in ipairs(GetAllyHeroes()) do
+        if ValidTarget(ally, math.huge, false) then
+            local dist = GetDistance(p, ally)
+            if dist < d then
+                d = dist
+            end
+        end
+    end
+    return d
 end
