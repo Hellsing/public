@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.009
+local version = 0.010
 
 local scriptName = "MehAIO"
 
