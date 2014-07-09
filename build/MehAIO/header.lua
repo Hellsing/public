@@ -318,3 +318,15 @@ function GenModelPacket(champ, skinId)
     p:Hide()
     RecvPacket(p)
 end
+
+function GetPredictedPos(unit, delay, speed, source)
+    if menu.prediction.predictionType == 1 then
+        return VP:GetPredictedPos(unit, delay, speed, source)
+    elseif menu.prediction.predictionType == 2 then
+        if not speed and not source then
+            return Prodiction.GetTimePrediction(unit, delay)
+        else
+            return Prodiction.GetPrediction(unit, math.huge, speed, delay, 1, source)
+        end
+    end
+end
