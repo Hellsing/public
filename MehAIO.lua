@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.010
+local version = 0.011
 
 local scriptName = "MehAIO"
 
@@ -1134,11 +1134,16 @@ function Orianna:OnCombo()
             OW:DisableAttacks()
         end
 
+        -- Cast Q
+        if menu.combo.useQ and spells[_Q]:IsReady() then
+            self:PredictCastQ(target)
+        end
+
         -- Cast ult if target is killable
         if menu.combo.useR and spells[_R]:IsReady() and CountEnemyHeroInRange(1000, target) >= CountAllyHeroInRange(1000, target)  then
             if DLib:IsKillable(target, self.mainCombo) and GetDistanceToClosestAlly(self.ballPos) < spells[_Q].range * self.farRange then
                 if self:GetEnemiesHitByR() >= menu.combo.numR then
-                    spells[_R]:Cast(target)
+                    spells[_R]:Cast()
                 end
             end
         end
@@ -1148,11 +1153,6 @@ function Orianna:OnCombo()
             if self:GetEnemiesHitByW() > 0 then
                 spells[_W]:Cast()
             end
-        end
-        
-        -- Cast Q
-        if menu.combo.useQ and spells[_Q]:IsReady() then
-            self:PredictCastQ(target)
         end
         
         -- Cast E
@@ -1184,6 +1184,42 @@ function Orianna:OnCombo()
                 OW:DisableAttacks()
             end
         end
+
+        -- Cast Q on best location
+        if menu.combo.useQ and spells[_Q]:IsReady() then
+            local castPosition, hitNum = self:GetBestPositionQ(target)
+            
+            if castPosition and hitNum > 1 then
+                spells[_Q]:Cast(castPosition.x, castPosition.z)
+            else
+                self:PredictCastQ(target)
+            end
+        end
+
+        -- Cast R on best location
+        if menu.combo.useR and spells[_R]:IsReady() then
+            if CountEnemyHeroInRange(800, self.ballPos) > 1 then
+                local hitNum, enemiesHit = self:GetEnemiesHitByR()
+                local potentialKills, kills = 0, 0
+                if hitNum >= 2 then
+                    for _, enemy in ipairs(enemiesHit) do
+                        if enemy.health - DLib:CalcComboDamage(enemy, self.mainCombo) < 0.4 * enemy.maxHealth or (DLib:CalcComboDamage(enemy, self.mainCombo) >= 0.4 * enemy.maxHealth) then
+                            potentialKills = potentialKills + 1
+                        end
+                        if DLib:IsKillable(enemy, self.mainCombo) then
+                            kills = kills + 1
+                        end
+                    end
+                end
+                if ((GetDistanceToClosestAlly(self.ballPos) < spells[_Q].range * self.farRange and hitNum >= CountEnemyHeroInRange(800, self.ballPos) or potentialKills > 1) or kills > 0) and hitNum >= menu.combo.numR then
+                    spells[_R]:Cast()
+                end
+            elseif menu.combo.numR == 1 then
+                if self:GetEnemiesHitByR() > 0 and DLib:IsKillable(target, {_Q, _W, _R}) and GetDistanceToClosestAlly(self.ballPos) < spells[_Q].range * self.farRange then
+                    spells[_R]:Cast()
+                end
+            end
+        end
         
         -- Cast W if it will hit
         if menu.combo.useW and spells[_W]:IsReady() then
@@ -1195,17 +1231,6 @@ function Orianna:OnCombo()
         -- Force the new target
         if OW:InRange(target) then
             OW:ForceTarget(target)
-        end
-
-        -- Cast Q on best location
-        if menu.combo.useQ and spells[_Q]:IsReady() then
-            local castPosition, hitNum = self:GetBestPositionQ(target)
-            
-            if castPosition and hitNum > 1 then
-                spells[_Q]:Cast(castPosition.x, castPosition.z)
-            else
-                self:PredictCastQ(target)
-            end
         end
         
         -- Cast E
@@ -1597,7 +1622,7 @@ function Orianna:OnGainBuff(unit, buff)
     if not unit or not unit.team or not buff or not buff.name then return end
 
     -- Ball applying to unit
-    if unit.team == player.team and buff.name:lower():find("orianaghostself") or buff.name:lower():find("orianaghost") then
+    if unit.team == player.team and (buff.name:lower():find("orianaghostself") or buff.name:lower():find("orianaghost")) then
         self.ballPos = unit
         self.ballMoving = false
     end
