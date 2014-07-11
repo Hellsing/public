@@ -195,6 +195,11 @@ function Orianna:OnTick()
         end
     end
 
+    -- Harass toggle
+    if not skip and not menu.harass.active and not menu.combo.active and menu.harass.toggle then
+        self:OnHarass()
+    end
+
 end
 
 function Orianna:OnCombo()
@@ -245,6 +250,13 @@ function Orianna:OnCombo()
             -- Cast E on self for damaging target
             if self:GetEnemiesHitByE(player) > 0 then
                 spells[_E]:Cast(player)
+            end
+        end
+
+        if menu.combo.ignite and _IGNITE then
+            local igniteTarget = STS:GetTarget(600)
+            if igniteTarget and DLib:IsKillable(igniteTarget, self.mainCombo) then
+                CastSpell(_IGNITE, igniteTarget)
             end
         end
 
@@ -331,6 +343,13 @@ function Orianna:OnCombo()
                     spells[_E]:Cast(ally)
                     return
                 end
+            end
+        end
+
+        if menu.combo.ignite and _IGNITE then
+            local igniteTarget = STS:GetTarget(600)
+            if igniteTarget and DLib:IsKillable(igniteTarget, self.mainCombo) then
+                CastSpell(_IGNITE, igniteTarget)
             end
         end
     end
@@ -729,13 +748,14 @@ function Orianna:ApplyMenu()
     menu.combo:addParam("sep",    "",                        SCRIPT_PARAM_INFO, "")
     menu.combo:addParam("numR",   "Use R on",                SCRIPT_PARAM_LIST, 1, { "1+ target", "2+ targets", "3+ targets", "4+ targets" , "5+ targets" })
     menu.combo:addParam("sep",    "",                        SCRIPT_PARAM_INFO, "")
-    menu.combo:addParam("ignite", "Use Ignite",              SCRIPT_PARAM_ONOFF, true)
+    menu.combo:addParam("ignite", "Use ignite",              SCRIPT_PARAM_ONOFF, true)
 
-    menu.harass:addParam("sep",  "",                         SCRIPT_PARAM_INFO, "")
-    menu.harass:addParam("useQ", "Use Q",                    SCRIPT_PARAM_ONOFF, true)
-    menu.harass:addParam("useW", "Use W",                    SCRIPT_PARAM_ONOFF, false)
-    menu.harass:addParam("sep",  "",                         SCRIPT_PARAM_INFO, "")
-    menu.harass:addParam("mana", "Don't harass if mana < %", SCRIPT_PARAM_SLICE, 0, 0, 100)
+    menu.harass:addParam("toggle", "Harass toggle",            SCRIPT_PARAM_ONKEYTOGGLE, false, string.byte("L"))
+    menu.harass:addParam("sep",    "",                         SCRIPT_PARAM_INFO, "")
+    menu.harass:addParam("useQ",   "Use Q",                    SCRIPT_PARAM_ONOFF, true)
+    menu.harass:addParam("useW",   "Use W",                    SCRIPT_PARAM_ONOFF, false)
+    menu.harass:addParam("sep",    "",                         SCRIPT_PARAM_INFO, "")
+    menu.harass:addParam("mana",   "Don't harass if mana < %", SCRIPT_PARAM_SLICE, 0, 0, 100)
 
     menu:addSubMenu("Misc", "misc")
         menu.misc:addSubMenu("Auto E on initiators", "autoE")
