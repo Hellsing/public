@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.011
+local version = 0.012
 
 local scriptName = "MehAIO"
 
@@ -29,9 +29,7 @@ local scriptName = "MehAIO"
 local champions = {
     ["Blitzcrank"]   = true,
     ["Brand"]        = true,
-    --["Nasus"]        = true,
     ["Orianna"]      = true,
-    --["Veigar"]       = true,
     ["Xerath"]       = true
 }
 

@@ -153,9 +153,11 @@ function Brand:OnCombo()
         spellTriggered = spellTriggered or spells[_E]:Cast(targets[_E]) == SPELLSTATE_TRIGGERED
     end
 
-    local igniteTarget = STS:GetTarget(600)
-    if igniteTarget and DLib:IsKillable(igniteTarget, self.mainCombo) and _IGNITE then
-        CastSpell(GetInventorySlotItem(_IGNITE), igniteTarget)
+    if menu.combo.ignite and _IGNITE then
+        local igniteTarget = STS:GetTarget(600)
+        if igniteTarget and DLib:IsKillable(igniteTarget, self.mainCombo) then
+            CastSpell(_IGNITE, igniteTarget)
+        end
     end
 
     if menu.combo.useR and targets[_R] and spells[_R]:IsReady() then
@@ -192,6 +194,7 @@ function Brand:OnHarass()
     local targets = {
         [_Q] = STS:GetTarget(spells[_Q].range),
         [_W] = STS:GetTarget(spells[_W].range),
+        [_E] = STS:GetTarget(spells[_E].range)
     }
 
     if menu.harass.useQ and targets[_Q] and spells[_Q]:IsReady() then
@@ -202,6 +205,10 @@ function Brand:OnHarass()
         spells[_W]:Cast(targets[_W])
     end
 
+    if menu.harass.useE and targets[_E] and spells[_E]:IsReady() then
+        spells[_E]:Cast(targets[_E])
+    end
+
 end
 
 function Brand:OnFarm()
@@ -210,12 +217,13 @@ function Brand:OnFarm()
 
     self.enemyMinions:update()
 
-    local useQ = menu.farm.lane and (menu.farm.useQ >= 3) or (menu.farm.useQ == 2)
-    local useW = menu.farm.lane and (menu.farm.useW >= 3) or (menu.farm.useW == 2)
-    local useE = menu.farm.lane and (menu.farm.useE >= 3) or (menu.farm.useE == 2)
-
     local minion = self.enemyMinions.objects[1]
+
     if minion then
+        local useQ = spells[_Q]:IsReady() and (menu.farm.lane and (menu.farm.useQ >= 3) or (menu.farm.useQ == 2))
+        local useW = spells[_W]:IsReady() and (menu.farm.lane and (menu.farm.useW >= 3) or (menu.farm.useW == 2))
+        local useE = spells[_E]:IsReady() and (menu.farm.lane and (menu.farm.useE >= 3) or (menu.farm.useE == 2))
+
         if useQ then
             spells[_Q]:Cast(minion)
         end
@@ -264,20 +272,22 @@ function Brand:OnJungleFarm()
 
     self.jungleMinions:update()
 
-    local useQ = menu.jfarm.useQ
-    local useW = menu.jfarm.useW
-    local useE = menu.jfarm.useE
-
     local minion = self.jungleMinions.objects[1]
+
     if minion then
-        if useQ and (not spells[_W]:IsReady() or not useW) then
+        local useQ = menu.jfarm.useQ and spells[_Q]:IsReady()
+        local useW = menu.jfarm.useW and spells[_W]:IsReady()
+        local useE = menu.jfarm.useE and spells[_E]:IsReady()
+
+
+        if useQ and (not useW and not useE or self:IsAblazed(minion)) then
             spells[_Q]:Cast(minion)
         end
         if useW then
             local castPosition = GetBestCircularFarmPosition(spells[_W].range, spells[_W].width, self.jungleMinions.objects)
             spells[_W]:Cast(castPosition.x, castPosition.z)
         end
-        if useE and (not spells[_W]:IsReady() or not useW) then
+        if useE and (not useW or self:IsAblazed(minion)) then
             spells[_E]:Cast(minion)
         end
     end
@@ -286,15 +296,18 @@ end
 
 function Brand:ApplyMenu()
 
-    menu.combo:addParam("sep",  "",      SCRIPT_PARAM_INFO, "")
-    menu.combo:addParam("useQ", "Use Q", SCRIPT_PARAM_ONOFF, true)
-    menu.combo:addParam("useW", "Use W", SCRIPT_PARAM_ONOFF, true)
-    menu.combo:addParam("useE", "Use E", SCRIPT_PARAM_ONOFF, true)
-    menu.combo:addParam("useR", "Use R", SCRIPT_PARAM_ONOFF, true)
+    menu.combo:addParam("sep",    "",           SCRIPT_PARAM_INFO, "")
+    menu.combo:addParam("useQ",   "Use Q",      SCRIPT_PARAM_ONOFF, true)
+    menu.combo:addParam("useW",   "Use W",      SCRIPT_PARAM_ONOFF, true)
+    menu.combo:addParam("useE",   "Use E",      SCRIPT_PARAM_ONOFF, true)
+    menu.combo:addParam("useR",   "Use R",      SCRIPT_PARAM_ONOFF, true)
+    menu.combo:addParam("sep",    "",           SCRIPT_PARAM_INFO, "")
+    menu.combo:addParam("ignite", "Use ignite", SCRIPT_PARAM_ONOFF, true)
 
     menu.harass:addParam("sep",  "",                         SCRIPT_PARAM_INFO, "")
     menu.harass:addParam("useQ", "Use Q",                    SCRIPT_PARAM_ONOFF, true)
     menu.harass:addParam("useW", "Use W",                    SCRIPT_PARAM_ONOFF, true)
+    menu.harass:addParam("useE", "Use E",                    SCRIPT_PARAM_ONOFF, true)
     menu.harass:addParam("sep",  "",                         SCRIPT_PARAM_INFO, "")
     menu.harass:addParam("mana", "Don't harass if mana < %", SCRIPT_PARAM_SLICE, 0, 0, 100)
 
