@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.013
+local version = 0.014
 
 local scriptName = "MehAIO"
 
@@ -30,7 +30,8 @@ local champions = {
     ["Blitzcrank"]   = true,
     ["Brand"]        = true,
     ["Orianna"]      = true,
-    ["Xerath"]       = true
+    ["Xerath"]       = true,
+    --["Yasuo"]        = true
 }
 
 if not champions[player.charName] then autoUpdate = nil silentUpdate = nil version = nil scriptName = nil champions = nil collectgarbage() return end
@@ -86,7 +87,7 @@ local spells   = {}
 local circles  = {}
 local AAcircle = nil
 
-local champLoaded = true
+local champLoaded = false
 local skip        = false
 
 local skinNumber = nil
@@ -112,7 +113,7 @@ function OnLoad()
     champ = champ()
 
     -- Prevent errors
-    if not champ then print("There was an error while loading " .. player.charName .. ", please report the shown error to Hellsing, thanks!") champLoaded = false return end
+    if not champ then print("There was an error while loading " .. player.charName .. ", please report the shown error to Hellsing, thanks!") return else champLoaded = true end
 
     -- Auto attack range circle
     AAcircle = DM:CreateCircle(player, OW:MyRange(), 3)
@@ -194,7 +195,7 @@ function OnDraw()
 end
 
 -- Spudgy please...
-function OnCreateObj(object) if champ.OnCreateObj then champ:OnCreateObj(object) end end
+function OnCreateObj(object) if champLoaded and champ.OnCreateObj then champ:OnCreateObj(object) end end
 
 --[[ Other Functions ]]--
 
@@ -944,7 +945,7 @@ function Orianna:__init()
 
     spellData = {
         [_Q] = { range = 825, skillshotType = SKILLSHOT_LINEAR, width = 80,  delay = 0,    speed = 1200, radius = 145, collision = false },
-        [_W] = { range = -1,                                    width = 245, delay = 0.25 },
+        [_W] = { range = -1,                                    width = 235, delay = 0.25 },
         [_E] = { range = 1095,                                  width = 80,  delay = 0.25, speed = 1700 },
         [_R] = { range = -1,                                    width = 380, delay = 0.6  },
     }
@@ -1622,7 +1623,7 @@ function Orianna:OnProcessSpell(unit, spell)
             self.ballMoving = true
             DelayAction(function(p) self.ballPos = Vector(p) end, GetDistance(spell.endPos, self.ballPos) / spells[_Q].speed - GetLatency()/1000 - 0.35, { Vector(spell.endPos) })
         -- Orianna E
-        elseif spell.name:lower():find("orianaredactcommand") then
+        elseif spell.name:lower():find("orianaredactcommand") and (not self.ballPos.networkID or self.ballPos.networkID ~= spell.target.networkID) then
             self.ballPos = spell.target
             self.ballMoving = true
         end

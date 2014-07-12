@@ -3,7 +3,7 @@
 local autoUpdate   = true
 local silentUpdate = false
 
-local version = 0.013
+local version = 0.014
 
 local scriptName = "MehAIO"
 
@@ -30,7 +30,8 @@ local champions = {
     ["Blitzcrank"]   = true,
     ["Brand"]        = true,
     ["Orianna"]      = true,
-    ["Xerath"]       = true
+    ["Xerath"]       = true,
+    --["Yasuo"]        = true
 }
 
 if not champions[player.charName] then autoUpdate = nil silentUpdate = nil version = nil scriptName = nil champions = nil collectgarbage() return end
@@ -86,7 +87,7 @@ local spells   = {}
 local circles  = {}
 local AAcircle = nil
 
-local champLoaded = true
+local champLoaded = false
 local skip        = false
 
 local skinNumber = nil
@@ -112,7 +113,7 @@ function OnLoad()
     champ = champ()
 
     -- Prevent errors
-    if not champ then print("There was an error while loading " .. player.charName .. ", please report the shown error to Hellsing, thanks!") champLoaded = false return end
+    if not champ then print("There was an error while loading " .. player.charName .. ", please report the shown error to Hellsing, thanks!") return else champLoaded = true end
 
     -- Auto attack range circle
     AAcircle = DM:CreateCircle(player, OW:MyRange(), 3)
@@ -194,7 +195,7 @@ function OnDraw()
 end
 
 -- Spudgy please...
-function OnCreateObj(object) if champ.OnCreateObj then champ:OnCreateObj(object) end end
+function OnCreateObj(object) if champLoaded and champ.OnCreateObj then champ:OnCreateObj(object) end end
 
 --[[ Other Functions ]]--
 
